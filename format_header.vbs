@@ -1,70 +1,58 @@
-Sub FormatExcelHeaders_new()
-    Dim inputFolderPath As String, outputFolderPath As String
-    Dim fso As Object, inputFolder As Object, inputFile As Object
-    Dim excelApp As Object, excelWorkbook As Object, excelWorksheet As Object
+Sub FormatExcelHeaders()
+    Dim folderPath As String, outputFolderPath As String
+    Dim fso As Object, folder As Object, file As Object
+    Dim excelApp As Object, workbook As Object, worksheet As Object
     Dim filename As String, outputFilename As String
     
     ' Define the folder paths
-    inputFolderPath = "C:\Users\User\Desktop\MBR"
+    folderPath = "C:\Users\User\Desktop\MBR\1"
     outputFolderPath = "C:\Users\User\Desktop\MBR\format_op"
     
-    ' Delete the output folder if it already exists
-    If Dir(outputFolderPath, vbDirectory) <> "" Then
-        Kill outputFolderPath & "\*.*"
-        RmDir outputFolderPath
+    ' Create the output folder if it does not exist
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FolderExists(outputFolderPath) Then
+        fso.CreateFolder outputFolderPath
     End If
     
-    ' Create the output folder
-    MkDir outputFolderPath
+    ' Delete the output folder if it already exists and contains files
+    If fso.FolderExists(outputFolderPath) And fso.GetFolder(outputFolderPath).Files.Count > 0 Then
+        fso.DeleteFolder outputFolderPath, True
+        fso.CreateFolder outputFolderPath
+    End If
     
-    ' Create a FileSystemObject and get the folder object
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Set inputFolder = fso.GetFolder(inputFolderPath)
-    
-    ' Loop through all files in the folder
-    For Each inputFile In inputFolder.Files
+    ' Get the folder object and loop through all files in the folder
+    Set folder = fso.GetFolder(folderPath)
+    For Each file In folder.Files
         ' Check if the file is an Excel file
-        If LCase(fso.GetExtensionName(inputFile.Path)) Like "xls*" Then
+        If fso.GetExtensionName(file.Path) Like "xls*" Then
             ' Open the Excel file
             Set excelApp = CreateObject("Excel.Application")
-            Set excelWorkbook = excelApp.Workbooks.Open(inputFile.Path)
-            Set excelWorksheet = excelWorkbook.ActiveSheet
+            Set workbook = excelApp.Workbooks.Open(file.Path)
+            Set worksheet = workbook.ActiveSheet
             
             ' Get the filename without the extension
-            filename = fso.GetBaseName(inputFile.Name)
+            filename = fso.GetBaseName(file.Name)
             outputFilename = outputFolderPath & "\" & filename & ".xlsx"
             
             ' Change the header text direction to vertical
-            With excelWorksheet.Range("A1:Z1")
-                .Orientation = 90
-                .WrapText = False
-                .HorizontalAlignment = -4108 ' xlCenter
-                .VerticalAlignment = -4108 ' xlCenter
-                .AddIndent = False
-                .IndentLevel = 0
-                .ShrinkToFit = False
-                .ReadingOrder = 2 ' xlContext
-                .MergeCells = False
-            End With
-            
-            ' Autofit the used cells in the worksheet
-            excelWorksheet.UsedRange.Columns.AutoFit
+            worksheet.Range("A1:Z1").Orientation = 90
+            worksheet.UsedRange.Columns.AutoFit
             
             ' Save and close the output file
-            excelWorkbook.SaveAs outputFilename, 51 ' xlOpenXMLWorkbook
-            excelWorkbook.Close
+            workbook.SaveAs outputFilename, 51
+            workbook.Close
             excelApp.Quit
             
             ' Show a message box with the output file path
             MsgBox "Output file saved to " & outputFilename
         End If
-    Next inputFile
+    Next file
     
     ' Clean up objects
-    Set excelWorksheet = Nothing
-    Set excelWorkbook = Nothing
+    Set worksheet = Nothing
+    Set workbook = Nothing
     Set excelApp = Nothing
-    Set inputFolder = Nothing
+    Set folder = Nothing
     Set fso = Nothing
 End Sub
 
